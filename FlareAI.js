@@ -48,7 +48,6 @@ const flareOp = () => {
         }
     }
     setTimeout(flareOp, 100);
-
 };
 
 flareCheckStone = () =>{
