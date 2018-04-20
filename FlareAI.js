@@ -3,6 +3,7 @@ const flareGoldenRatio = 1.61803398875
 let flareLastQtys = []
 let flareLastPrices = []
 let flareLastFunds = []
+let flareMessages = []
 let flareTopWireCost = 0
 let flareNeedMarketing = false
 let flareUsedFunds = false
@@ -162,7 +163,7 @@ flareHandleInvestment = () => {
         }
     }
     // Handle investment level
-    if (flareStone !== 5 && flareRunYomi && investLevel < 10 && !(flareStone === 7 && flareTotalAssets() > 9000000)) {
+    if (flareStone !== 5 && flareRunYomi && game.investLevel < 10 && !(flareStone === 7 && flareTotalAssets() > 9000000)) {
         if (!flareUsedYomi && yomi > investUpgradeCost) {
             gid('btnImproveInvestments').click()
             flareUsedYomi = true
@@ -287,7 +288,7 @@ flareProjectButtonClick = (project) => {
 
 flareUtilizeQuantumComputing = () => {
     if (flareGetQlevel() > 0) {
-        qComp()
+        gid('btnQcompute').click()
     }
 }
 
@@ -303,7 +304,7 @@ flareGetQlevel = () => {
 
 flareMonitorYomi = () => {
     const opsNeeded = flareStone < 6 && flareGetQlevel() > 1.3
-    if (!game.tourneyInProg && game.tourneyCost < operations && flareRunYomi && !flareUsedYomi && !opsNeeded) {
+    if (!game.tourneyInProg && game.tourneyCost < game.operations && flareRunYomi && !flareUsedYomi && !opsNeeded) {
         gid('btnNewTournament').click()
         gid('stratPicker').value = flareChosenStrat
         gid('btnRunTournament').click()
@@ -336,13 +337,28 @@ const kickoff = () => {
 
 const resetGame = (callback) => {
     game.reset();
+    flareLog('Initiating Feature Laden Automated Resource Engine (F.L.A.R.E.)')
     setTimeout(callback,1000)
 }
 
 flareLog = (message) => {
-    // gid('flareConsole')
-    console.log(`${game.ticks}- ${message}`)
+  flareMessages.push(message)
+  let messages = flareMessages.length > 1 ? '/*' : '';
+  flareMessages.forEach((mess, i) => {
+      if (i < flareMessages.length - 1) {
+        messages += '<br/>&nbsp;&nbsp;';
+      } else {
+          messages += flareMessages.length > 1 ? '<br/>*/<br/>' : '';
+          messages += '//&nbsp;';
+      }
+      messages += mess;
+  })
+  document.getElementById('flareOutput').innerHTML = messages
+  document.getElementById("flareOutput").scrollTop = document.getElementById("flareOutput").scrollHeight;
+  console.log(`${game.ticks}- ${message}`)
 }
+
+flareTotalAssets = () => game.funds + game.portTotal
 
 flareProjects = [
     // ----- "Trust-driven" Projects -----
