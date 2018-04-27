@@ -164,7 +164,7 @@ flareHandleInvestment = () => {
     }
     // Handle investment level
     if (flareStone !== 5 && flareRunYomi && game.investLevel < 10 && !(flareStone === 7 && flareTotalAssets() > 9000000)) {
-        if (!flareUsedYomi && yomi > investUpgradeCost) {
+        if (!flareUsedYomi && game.yomi > game.investUpgradeCost) {
             gid('btnImproveInvestments').click()
             flareUsedYomi = true
         }
@@ -260,10 +260,6 @@ flareProjectWork = () => {
 }
 
 flareProjectButtonClick = (project) => {
-    // Once I have access to "Full Monopoly", all other projects are secondary
-    // if (gid('projectButton38') && project.id !== 'projectButton38') {
-    //     return
-    // }
     if (gid(project.id) && !gid(project.id).disabled) {
         // I am granted access to the project. Do I meet its requirements?
         const opsReq = !flareUsedOps && (!project.operations || game.operations >= project.operations)
@@ -346,9 +342,9 @@ flareLog = (message) => {
   let messages = flareMessages.length > 1 ? '/*' : '';
   flareMessages.forEach((mess, i) => {
       if (i < flareMessages.length - 1) {
-        messages += '<br/>&nbsp;&nbsp;';
+        messages += '<br/>&nbsp;-&nbsp;';
       } else {
-          messages += flareMessages.length > 1 ? '<br/>*/<br/>' : '';
+          messages += flareMessages.length > 1 ? '<br/>*/<br/><br/>' : '';
           messages += '//&nbsp;';
       }
       messages += mess;
@@ -492,7 +488,7 @@ flareProjects = [
             if (flareProjects[idx].funds >= 256000000) {
                 flareProjects.splice(idx, 1)
             } else {
-                flareProjects.flareProjects[idx].funds*=2
+                flareProjects[idx].funds*=2
             }
         }
     },

@@ -33,10 +33,11 @@
         #flareOutput {
             height: 100%;
             overflow: hidden;
+            overflow-x: hidden;
+            margin-left: 5px;
         }
         .flareToggle {
             display: flex;
-            align-items: center;
         }
 
         .flareToggle a {
@@ -56,10 +57,10 @@
           let output = document.getElementById('flareOutput');
           if (container.style.height === '200px') {
             container.style.height = '40px';
-            output.style.overflow = 'hidden';
+            output.style.overflowY = 'hidden';
           } else {
             container.style.height = '200px';
-            output.style.overflow = 'scroll';
+            output.style.overflowY = 'scroll';
           }
           document.getElementById("flareOutput").scrollTop = document.getElementById("flareOutput").scrollHeight;
         }
