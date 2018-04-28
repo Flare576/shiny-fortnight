@@ -47,6 +47,31 @@ const flareOp = () => {
         if (game.wire) {
             gid('btnMakePaperclip').click()
         }
+    } else if (flareStone < 17) {
+        // Continue working on projects, yomi, and quantum
+        flareAllotTrust()
+        flareProjectWork()
+        flareUtilizeQuantumComputing()
+        flareMonitorYomi()
+        // Factories use 200MW, drones cost 1MW
+        flareBuyPower()
+        flareBuyFactories()
+        flareBuyDrones()
+
+        flareCheckStone()
+    } else {
+        flareAllotTrust()
+        flareProjectWork()
+        flareUtilizeQuantumComputing()
+        flareMonitorYomi()
+
+        flareSyncSwarm()
+        flareIncreaseDroneTrust()
+        flareBalanceDrones()
+
+        if (!gid('btnMakeProbe').disabled) {
+            gid('btnMakeProbe').click()
+        }
     }
     setTimeout(flareOp, 100);
 };
@@ -67,7 +92,7 @@ flareCheckStone = () =>{
     else if (flareStone === 7 && flareTotalAssets() >= 512000000) {
         flareStone++
         console.log('512m')
-        // flareSave()
+        flareSave()
     }
     // 9 is set by last gift
     // 10 is set by drone release
@@ -77,7 +102,7 @@ flareCheckStone = () =>{
     if (flareStone === 13 && game.clips > 1100000000000000000000) {
         flareStone++
         console.log('sextillion clips')
-        // flareSave()
+        flareSave()
         gid('btnFactoryReboot').click()
         gid('btnHarvesterReboot').click()
         gid('btnWireDroneReboot').click()
@@ -357,12 +382,226 @@ flareLog = (message) => {
 
 flareTotalAssets = () => game.funds + game.portTotal
 
+// ----- Phase 2 ------
+
+flareBuyPower = () => {
+    if (flareStone < 11) {
+        return
+    }
+    // The faster you get to 50 farms the better
+    let flareFarmCost = game.farmCost
+    let flareBatteryCost = game.batteryCost
+    let flareBatteryButton = 'btnMakeBattery'
+    let flareFarmButton = 'btnMakeFarm'
+    if (flareStone === 13) {
+        flareFarmCost = game.p10f
+        flareBatteryCost = game.p10b
+        flareBatteryButton = 'btnBatteryx10'
+        flareFarmButton = 'btnFarmx10'
+
+    } else if (flareStone >= 14) {
+        flareFarmCost = game.p100f
+        flareBatteryCost = game.p100b
+        flareBatteryButton = 'btnBatteryx100'
+        flareFarmButton = 'btnFarmx100'
+    }
+    flareBatteryCost = game.batteryLevel < 1000 && flareBatteryCost
+    if (flareNeedEnergy()) {
+        if (!flareUsedClips && flareFarmCost + flareBatteryCost < game.unusedClips) {
+            flareUsedClips = true
+            gid(flareFarmButton).click()
+            if (flareBatteryCost) {
+                gid(flareBatteryButton).click()
+            }
+        }
+    }
+}
+
+flareNeedEnergy = () => {
+    let flareBatteryBuffer = 1
+    if (game.farmLevel < 30) {
+        flareBatteryBuffer = 2 * game.factoryLevel
+    } else if (flareStone === 13) {
+        flareBatteryBuffer = 10
+    } else if (flareStone >= 14) {
+        flareBatteryBuffer = 300
+    }
+    return flareGetPowerDemand() + flareBatteryBuffer >= game.farmLevel * game.farmRate/100
+}
+
+flareNeedFactories = () => {
+    if (game.factoryLevel >= 200) {
+        return game.unusedClips > game.factoryCost
+    }
+    return game.wire > 1
+}
+
+flareGetPowerDemand = () => {
+    const dDemand = (game.harvesterLevel * game.dronePowerRate/100) + (game.wireDroneLevel * game.dronePowerRate/100);
+    const fDemand = (game.factoryLevel * game.factoryPowerRate/100);
+    return dDemand + fDemand
+}
+
+flareBuyFactories = () => {
+    if (flareStone < 11) {
+        return
+    }
+    if (!flareNeedEnergy() && flareNeedFactories()) {
+        if (!flareUsedClips && game.factoryCost < game.unusedClips) {
+            flareUsedClips = true
+            gid('btnMakeFactory').click()
+        }
+    }
+}
+
+flareBuyDrones = () => {
+    if (flareStone < 11) {
+        return
+    }
+    if (flareStone >= 12) {
+        const flareMaxSlider = flareStone >= 14 ? 199 : 180
+        const flareSliderVal = Math.min(flareMaxSlider, 100 + game.factoryLevel * 10)
+        if (gid('slider').value !== flareSliderVal) {
+            gid('slider').value = flareSliderVal
+        }
+        flareEntertainSwarm()
+    }
+    if (!flareNeedEnergy() && !flareNeedFactories()) {
+        const ratio = flareStone >= 14 ? 1 : flareGoldenRatio
+        if (game.harvesterLevel * ratio < game.wireDroneLevel) {
+            if (!flareUsedClips && flareHarvesterDroneCost() < game.unusedClips) {
+                flareUsedClips = true
+                gid(flareStone >= 14 ? 'btnHarvesterx1000' : game.factoryLevel >= 15 ? 'btnHarvesterx100' : 'btnMakeHarvester').click()
+            }
+        } else {
+            if (!flareUsedClips && flareWireDroneCost() < game.unusedClips) {
+                flareUsedClips = true
+                gid(flareStone >= 14 ? 'btnWireDronex1000' : game.factoryLevel >= 15 ? 'btnWireDronex100' : 'btnMakeWireDrone').click()
+            }
+        }
+    }
+}
+
+flareEntertainSwarm = () => {
+    if (gid('entertainButtonDiv').style.display !== 'none' && !gid('btnEntertainSwarm').disabled) {
+        console.log('entertaining')
+        flareUsedCreativity = true
+        gid('btnEntertainSwarm').click()
+    }
+}
+
+flareHarvesterDroneCost = () => {
+    return flareStone >= 14 ? game.p1000h : game.factoryLevel >= 15 ? game.p100h : game.harvesterCost
+}
+
+flareWireDroneCost = () => {
+    return flareStone >= 14 ? game.p1000w : game.factoryLevel >= 15 ? game.p100w : game.wireDroneCost
+}
+
+// ----- Phase 3 -----
+
+flareSyncSwarm = () => {
+    if (gid('synchButtonDiv').style.display !== 'none' && !gid('btnSynchSwarm').disabled && !flareUsedYomi) {
+        gid('btnSynchSwarm').click()
+        flareUsedYomi = true
+    }
+}
+
+flareIncreaseDroneTrust = () => {
+    if (gid('increaseMaxTrustDiv').style.display !== 'none' && !gid('btnIncreaseMaxTrust').disabled) {
+        gid('btnIncreaseMaxTrust').click()
+    }
+
+    if (!gid('btnIncreaseProbeTrust').disabled) {
+        gid('btnIncreaseProbeTrust').click()
+    }
+}
+
+flareBalanceDrones = () => {
+    let probeLevels = {}
+    probeLevels.Speed = flareStone >= 21 ? 5 : flareStone >= 18 ? 2 : game.availableMatter < 1
+    probeLevels.Nav = flareStone >= 21 ? 5 : game.availableMatter < 1
+    probeLevels.Fac =  game.wire > 1 || game.factoryLevel < 1
+    probeLevels.Wire = game.acquiredMatter > 1 && game.wire < 1
+    probeLevels.Harv = game.availableMatter > 1 && game.acquiredMatter < 1
+    probeLevels.Combat = game.probesLostCombat >= 10000000 ? 5 : 0
+    const left = game.probeTrust - Object.entries(probeLevels).reduce((count, level) => count + level[1], 0)
+    probeLevels.Haz = Math.min(left, 6)
+    probeLevels.Rep = Math.max(0, left - 6)
+    flareSetProbeLevels(probeLevels)
+    if (flareStone === 21) {
+        gid('slider').value = 150
+    } else {
+        gid('slider').value = 199
+    }
+}
+
+flareSetProbeLevels = (levels) => {
+    Object.entries(levels).reduce((canChange, level) => flareAdjustLevel(canChange, level[0], level[1]), true)
+}
+
+flareAdjustLevel = (canChange, btn, lvl) => {
+    const curVal = window[`probe${btn}`]
+    curVal <= lvl || flareAdjustProbe(`btnLowerProbe${btn}`)
+    canChange = canChange && (curVal >= lvl || flareAdjustProbe(`btnRaiseProbe${btn}`))
+    return canChange
+}
+
+flareAdjustProbe = (btn) => {
+    if (!gid(btn).disabled) {
+        gid(btn).click()
+        return false
+    }
+    return true
+}
+
+flareSave = () => {
+    game.save1()
+    const flareSaveData = {
+        flareChosenStrat,
+        flareBetterFriends,
+        flareRunYomi,
+        flareStone
+    }
+    localStorage.setItem("flareSave1",JSON.stringify(flareSaveData));
+    console.log(`
+    localStorage.setItem('flareSave1', '${localStorage.getItem("flareSave1")}')
+    game.localStorage.setItem('saveGame1', '${game.localStorage.getItem("saveGame1")}')
+    game.localStorage.setItem('saveProjectsActive1', '${game.localStorage.getItem("saveProjectsActive1")}')
+    game.localStorage.setItem('saveProjectsFlags1', '${game.localStorage.getItem("saveProjectsFlags1")}')
+    game.localStorage.setItem('saveProjectsUses1', '${game.localStorage.getItem("saveProjectsUses1")}')
+    game.localStorage.setItem('saveStratsActive1', '${game.localStorage.getItem("saveStratsActive1")}')
+    `)
+}
+
 flare512 = () => {
     localStorage.setItem('flareSave1', '{"flareChosenStrat":7,"flareBetterFriends":true,"flareRunYomi":true,"flareStone":8}')
     game.localStorage.setItem('saveGame1', '{"resetFlag":2,"dismantle":0,"endTimer1":0,"endTimer2":0,"endTimer3":0,"endTimer4":0,"endTimer5":0,"endTimer6":0,"testFlag":0,"finalClips":0,"wireBuyerStatus":1,"wirePriceTimer":13,"qFade":0.8759999999999999,"autoTourneyStatus":1,"driftKingMessageCost":1,"sliderPos":0,"tempOps":2347,"standardOps":59000,"opFade":0.01,"entertainCost":10000,"boredomLevel":0,"boredomFlag":0,"boredomMsg":0,"unitSize":0,"driftersKilled":0,"battleEndDelay":0,"battleEndTimer":100,"masterBattleClock":0,"honorCount":0,"threnodyTitle":"Durenstein 1","bonusHonor":0,"honorReward":0,"resultsTimer":0,"resultsFlag":0,"honor":0,"maxTrust":20,"maxTrustCost":91117.99,"disorgCounter":0,"disorgFlag":0,"synchCost":5000,"disorgMsg":0,"threnodyCost":50000,"farmRate":50,"batterySize":10000,"factoryPowerRate":200,"dronePowerRate":1,"farmLevel":0,"batteryLevel":0,"farmCost":10000000,"batteryCost":1000000,"storedPower":0,"powMod":0,"farmBill":0,"batteryBill":0,"momentum":0,"swarmFlag":0,"swarmStatus":7,"swarmGifts":0,"nextGift":0,"giftPeriod":125000,"giftCountdown":125000,"elapsedTime":0,"maxFactoryLevel":0,"maxDroneLevel":0,"wirePriceCounter":693,"wireBasePrice":144.2564562628058,"egoFlag":0,"autoTourneyFlag":0,"tothFlag":0,"incomeTracker":[33491.64,33612.74,33632.56,33510.82,33491.64,33604.9,33483.3,33373.42,33483.3,33366.64],"qChips":[{"waveSeed":0.1,"value":0.9658799208980569,"active":1},{"waveSeed":0.2,"value":-0.5003070718142854,"active":1},{"waveSeed":0.3,"value":-0.7067305580304504,"active":1},{"waveSeed":0.4,"value":0.8663797982471076,"active":1},{"waveSeed":0.5,"value":0.2579626205656893,"active":1},{"waveSeed":0.6,"value":-0.9999994341255863,"active":1},{"waveSeed":0.7,"value":0.26001769756540155,"active":1},{"waveSeed":0.8,"value":0.8653153082065311,"active":1},{"waveSeed":0.9,"value":-0.7082342498284218,"active":1},{"waveSeed":1,"value":-0.49846369857713124,"active":1}],"stocks":[{"id":127,"symbol":"JXOA","price":19,"amount":1000000,"total":19000000,"profit":5000000,"age":30},{"id":128,"symbol":"EAXZ","price":27,"amount":1000000,"total":27000000,"profit":7000000,"age":22},{"id":129,"symbol":"AABW","price":45,"amount":1000000,"total":45000000,"profit":22000000,"age":19},{"id":130,"symbol":"OAU","price":13,"amount":1000000,"total":13000000,"profit":-6000000,"age":10},{"id":131,"symbol":"YBQX","price":564,"amount":779919,"total":439874316,"profit":118547688,"age":2}],"battles":[],"battleNumbers":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"clips":109481813.85024294,"unusedClips":109481813.85024294,"clipRate":88797.24999940395,"clipRateTemp":19556.69999986887,"prevClips":109480925.00024295,"clipRateTracker":21,"clipmakerRate":0,"clipmakerLevel":118,"clipperCost":76624.06513870315,"unsoldClips":782623.0999998605,"funds":3336.79,"margin":0.43,"wire":65686.1499999993,"wireCost":150,"adCost":51200,"demand":3290.1595688372117,"clipsSold":108699190.74999532,"avgRev":33255.874139801555,"ticks":372021,"marketing":2.3579476910000015,"marketingLvl":10,"x":0,"clippperCost":5,"processors":30,"memory":59,"operations":61347,"trust":89,"nextTrust":121393000,"transaction":3336.799,"clipperBoost":7.5,"blinkCounter":0,"creativity":23943,"creativityOn":true,"safetyProjectOn":false,"boostLvl":3,"wirePurchase":2495,"wireSupply":173250,"marketingEffectiveness":15,"milestoneFlag":6,"bankroll":90039,"fib1":75025,"fib2":121393,"strategyEngineFlag":1,"investmentEngineFlag":1,"revPerSecFlag":0,"compFlag":1,"projectsFlag":1,"autoClipperFlag":1,"megaClipperFlag":1,"megaClipperCost":75955.94508846347,"megaClipperLevel":64,"megaClipperBoost":2.75,"creativitySpeed":91.26579357925937,"creativityCounter":1,"wireBuyerFlag":1,"demandBoost":50,"humanFlag":1,"trustFlag":1,"nanoWire":0,"creationFlag":0,"wireProductionFlag":0,"spaceFlag":0,"factoryFlag":0,"harvesterFlag":0,"wireDroneFlag":0,"factoryLevel":0,"factoryBoost":1,"droneBoost":1,"availableMatter":6e+27,"acquiredMatter":0,"processedMatter":0,"harvesterLevel":0,"wireDroneLevel":0,"factoryCost":100000000,"harvesterCost":1000000,"wireDroneCost":1000000,"factoryRate":1000000000,"harvesterRate":26180337,"wireDroneRate":16180339,"harvesterBill":0,"wireDroneBill":0,"factoryBill":0,"probeCount":0,"totalMatter":3e+55,"foundMatter":6e+27,"qFlag":1,"qClock":2468.770000007467,"qChipCost":60000,"nextQchip":10,"bribe":1000000,"battleFlag":0,"portfolioSize":5,"stockID":131,"secTotal":543874316,"portTotal":543964355,"sellDelay":3,"riskiness":1,"maxPort":5,"m":543874316,"investLevel":9,"investUpgradeCost":52273,"stockGainThreshold":0.6300000000000001,"ledger":-3064886,"stockReportCounter":3353,"tourneyCost":8000,"tourneyLvl":124,"stratCounter":7,"roundNum":0,"hMove":1,"vMove":1,"hMovePrev":1,"vMovePrev":1,"aa":5,"ab":2,"ba":3,"bb":3,"rounds":64,"currentRound":14,"rCounter":10,"tourneyInProg":1,"winnerPtr":5,"high":0,"pick":"7","yomi":25379,"yomiBoost":1,"probeSpeed":0,"probeNav":0,"probeRep":0,"partialProbeSpawn":0,"probeHaz":0,"partialProbeHaz":0,"probesLostHaz":0,"probesLostDrift":0,"probesLostCombat":0,"probeFac":0,"probeWire":0,"probeCombat":0,"attackSpeed":0.2,"battleSpeed":0.2,"attackSpeedFlag":0,"attackSpeedMod":0.1,"probeDescendents":0,"drifterCount":0,"warTrigger":1000000,"battleID":0,"battleName":"foo","battleNameFlag":0,"maxBattles":1,"battleClock":0,"battleAlarm":10,"outcomeTimer":150,"drifterCombat":1.75,"probeTrust":0,"probeUsedTrust":0,"probeTrustCost":500,"probeLaunchLevel":0,"probeCost":100000000000000000}')
     game.localStorage.setItem('saveProjectsActive1', '["projectButton42","projectButton70","projectButton119","projectButton40"]')
     game.localStorage.setItem('saveProjectsFlags1', '[1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]')
     game.localStorage.setItem('saveProjectsUses1', '[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]')
+    game.localStorage.setItem('saveStratsActive1', '[1,1,1,1,1,1,1,1]')
+    flareLoad()
+    setTimeout(flareOp, 1000)
+}
+
+flareEarthGone = () => {
+    localStorage.setItem('flareSave1', '{"flareChosenStrat":7,"flareBetterFriends":true,"flareRunYomi":true,"flareStone":13}')
+    game.localStorage.setItem('saveGame1', '{"resetFlag":2,"dismantle":0,"endTimer1":0,"endTimer2":0,"endTimer3":0,"endTimer4":0,"endTimer5":0,"endTimer6":0,"testFlag":0,"finalClips":0,"wireBuyerStatus":1,"wirePriceTimer":10,"qFade":1,"autoTourneyStatus":1,"driftKingMessageCost":1,"sliderPos":"180","tempOps":4962,"standardOps":102000,"opFade":0.01,"entertainCost":10000,"boredomLevel":0,"boredomFlag":0,"boredomMsg":0,"unitSize":0,"driftersKilled":0,"battleEndDelay":0,"battleEndTimer":100,"masterBattleClock":0,"honorCount":0,"threnodyTitle":"Durenstein 1","bonusHonor":0,"honorReward":0,"resultsTimer":0,"resultsFlag":0,"honor":0,"maxTrust":20,"maxTrustCost":91117.99,"disorgCounter":5.715082244807671,"disorgFlag":0,"synchCost":5000,"disorgMsg":0,"threnodyCost":50000,"farmRate":50,"batterySize":10000,"factoryPowerRate":200,"dronePowerRate":1,"farmLevel":982,"batteryLevel":1000,"farmCost":20859254340882180,"batteryCost":417929047164229.8,"storedPower":204482.08000010983,"powMod":30.826999999973562,"farmBill":5414085081585893000,"batteryBill":117968235764901840,"momentum":1,"swarmFlag":1,"swarmStatus":0,"swarmGifts":0,"nextGift":8,"giftPeriod":125000,"giftCountdown":4641.186354909822,"elapsedTime":0,"maxFactoryLevel":68,"maxDroneLevel":34051,"wirePriceCounter":900,"wireBasePrice":141.34516616248692,"egoFlag":0,"autoTourneyFlag":0,"tothFlag":1,"incomeTracker":[33366.64,33258.57,33366.64,33251.89,33147.74,33258.57,33462.88,33491.64,33604.9,33483.3],"qChips":[{"waveSeed":0.1,"value":0.9960968178807174,"active":1},{"waveSeed":0.2,"value":-0.1758457018008471,"active":1},{"waveSeed":0.3,"value":-0.9650539410370875,"active":1},{"waveSeed":0.4,"value":0.34621125712747436,"active":1},{"waveSeed":0.5,"value":0.9039356236325178,"active":1},{"waveSeed":0.6,"value":-0.5057873056268856,"active":1},{"waveSeed":0.7,"value":-0.814646588547389,"active":1},{"waveSeed":0.8,"value":0.6496007367226165,"active":1},{"waveSeed":0.9,"value":0.6999694854900858,"active":1},{"waveSeed":1,"value":-0.7731696742048916,"active":1}],"stocks":[{"id":137,"symbol":"YONB","price":12,"amount":1000000,"total":12000000,"profit":3000000,"age":8},{"id":138,"symbol":"WCDD","price":14,"amount":1000000,"total":14000000,"profit":-1000000,"age":4}],"battles":[],"battleNumbers":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"clips":1.1007601522770481e+21,"unusedClips":46800040214885260000,"clipRate":20934381095248593000,"clipRateTemp":2724797399997743000,"prevClips":1.1005505286770482e+21,"clipRateTracker":12,"clipmakerRate":0,"clipmakerLevel":0,"clipperCost":76624.06513870315,"unsoldClips":1.1007601522769275e+21,"funds":0,"margin":0.44,"wire":37155784147662110,"wireCost":148,"adCost":51200,"demand":3215.383215000002,"clipsSold":120571806.74999532,"avgRev":33370.75257965164,"ticks":459812,"marketing":2.3579476910000015,"marketingLvl":10,"x":100,"clippperCost":5,"processors":36,"memory":102,"operations":106959,"trust":0,"nextTrust":196418000,"transaction":3325.52,"clipperBoost":7.5,"blinkCounter":0,"creativity":14725,"creativityOn":true,"safetyProjectOn":false,"boostLvl":3,"wirePurchase":2564,"wireSupply":173250,"marketingEffectiveness":15,"milestoneFlag":11,"bankroll":52847990,"fib1":121393,"fib2":196418,"strategyEngineFlag":1,"investmentEngineFlag":0,"revPerSecFlag":0,"compFlag":1,"projectsFlag":1,"autoClipperFlag":1,"megaClipperFlag":1,"megaClipperCost":75955.94508846347,"megaClipperLevel":0,"megaClipperBoost":2.75,"creativitySpeed":115.17274734001197,"creativityCounter":0,"wireBuyerFlag":0,"demandBoost":50,"humanFlag":0,"trustFlag":1,"nanoWire":106578.24999999956,"creationFlag":0,"wireProductionFlag":1,"spaceFlag":0,"factoryFlag":1,"harvesterFlag":1,"wireDroneFlag":1,"factoryLevel":68,"factoryBoost":1,"droneBoost":1,"availableMatter":5.999998898726399e+27,"acquiredMatter":475872973016512450,"processedMatter":0,"harvesterLevel":13002,"wireDroneLevel":21049,"factoryCost":151923876012448060000,"harvesterCost":1805502174154949,"wireDroneCost":5337246061121517,"factoryRate":100000000000000,"harvesterRate":2618033700000,"wireDroneRate":1618033900000,"harvesterBill":7222772588959132000,"wireDroneBill":34566263605004956000,"factoryBill":1.0066390225508524e+21,"probeCount":0,"totalMatter":3e+55,"foundMatter":6e+27,"qFlag":1,"qClock":3346.68000002663,"qChipCost":60000,"nextQchip":10,"bribe":512000000,"battleFlag":0,"portfolioSize":2,"stockID":138,"secTotal":26000000,"portTotal":78847990,"sellDelay":484,"riskiness":1,"maxPort":5,"m":26000000,"investLevel":9,"investUpgradeCost":52273,"stockGainThreshold":0.6300000000000001,"ledger":503392212,"stockReportCounter":6762,"tourneyCost":8000,"tourneyLvl":142,"stratCounter":4,"roundNum":0,"hMove":1,"vMove":2,"hMovePrev":1,"vMovePrev":2,"aa":9,"ab":10,"ba":3,"bb":4,"rounds":64,"currentRound":43,"rCounter":6,"tourneyInProg":1,"winnerPtr":2,"high":0,"pick":"7","yomi":97659,"yomiBoost":1,"probeSpeed":0,"probeNav":0,"probeRep":0,"partialProbeSpawn":0,"probeHaz":0,"partialProbeHaz":0,"probesLostHaz":0,"probesLostDrift":0,"probesLostCombat":0,"probeFac":0,"probeWire":0,"probeCombat":0,"attackSpeed":0.2,"battleSpeed":0.2,"attackSpeedFlag":0,"attackSpeedMod":0.1,"probeDescendents":0,"drifterCount":0,"warTrigger":1000000,"battleID":0,"battleName":"foo","battleNameFlag":0,"maxBattles":1,"battleClock":0,"battleAlarm":10,"outcomeTimer":150,"drifterCombat":1.75,"probeTrust":0,"probeUsedTrust":0,"probeTrustCost":500,"probeLaunchLevel":0,"probeCost":100000000000000000}')
+    game.localStorage.setItem('saveProjectsActive1', '["projectButton42","projectButton119","projectButton118","projectButton102"]')
+    game.localStorage.setItem('saveProjectsFlags1', '[1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]')
+    game.localStorage.setItem('saveProjectsUses1', '[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]')
+    game.localStorage.setItem('saveStratsActive1', '[1,1,1,1,1,1,1,1]')
+    flareLoad()
+    setTimeout(flareOp, 1000)
+}
+
+flareTest = () => {
+    localStorage.setItem('flareSave1', '{"flareChosenStrat":7,"flareBetterFriends":true,"flareRunYomi":true,"flareStone":17}')
+    game.localStorage.setItem('saveGame1', '{"resetFlag":2,"dismantle":0,"endTimer1":0,"endTimer2":0,"endTimer3":0,"endTimer4":0,"endTimer5":0,"endTimer6":0,"testFlag":0,"finalClips":0,"wireBuyerStatus":1,"wirePriceTimer":239,"qFade":-0.2880000000000011,"autoTourneyStatus":1,"driftKingMessageCost":1,"sliderPos":"100","tempOps":0,"standardOps":25468.40000000092,"opFade":0.01,"entertainCost":10000,"boredomLevel":1296,"boredomFlag":0,"boredomMsg":0,"unitSize":0,"driftersKilled":0,"battleEndDelay":0,"battleEndTimer":100,"masterBattleClock":0,"honorCount":0,"threnodyTitle":"Durenstein 1","bonusHonor":0,"honorReward":0,"resultsTimer":0,"resultsFlag":0,"honor":0,"maxTrust":20,"maxTrustCost":91117.99,"disorgCounter":13.958052560118574,"disorgFlag":0,"synchCost":5000,"disorgMsg":0,"threnodyCost":50000,"farmRate":50,"batterySize":10000,"factoryPowerRate":200,"dronePowerRate":1,"farmLevel":1,"batteryLevel":0,"farmCost":10000000,"batteryCost":1000000,"storedPower":0,"powMod":1,"farmBill":0,"batteryBill":0,"momentum":1,"swarmFlag":1,"swarmStatus":9,"swarmGifts":0,"nextGift":13,"giftPeriod":125000,"giftCountdown":2971.4693822458407,"elapsedTime":0,"maxFactoryLevel":220,"maxDroneLevel":5803000,"wirePriceCounter":957,"wireBasePrice":139.10052602716547,"egoFlag":0,"autoTourneyFlag":0,"tothFlag":1,"incomeTracker":[33366.64,33258.57,33366.64,33251.89,33147.74,33258.57,33462.88,33491.64,33604.9,33483.3],"qChips":[{"waveSeed":0.1,"value":0.9926001153118852,"active":1},{"waveSeed":0.2,"value":0.24106095271527778,"active":1},{"waveSeed":0.3,"value":-0.9340565165074473,"active":1},{"waveSeed":0.4,"value":-0.4679041197528561,"active":1},{"waveSeed":0.5,"value":0.8204222229515193,"active":1},{"waveSeed":0.6,"value":0.6671502810648537,"active":1},{"waveSeed":0.7,"value":-0.6583993903152061,"active":1},{"waveSeed":0.8,"value":-0.8270478892234946,"active":1},{"waveSeed":0.9,"value":0.45754413245088055,"active":1},{"waveSeed":1,"value":0.9381661762118954,"active":1}],"stocks":[{"id":137,"symbol":"YONB","price":12,"amount":1000000,"total":12000000,"profit":3000000,"age":8},{"id":138,"symbol":"WCDD","price":14,"amount":1000000,"total":14000000,"profit":-1000000,"age":4}],"battles":[],"battleNumbers":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"clips":5.999999999999548e+27,"unusedClips":9.999989999978042e+26,"clipRate":0,"clipRateTemp":0,"prevClips":5.999999999999548e+27,"clipRateTracker":1,"clipmakerRate":0,"clipmakerLevel":0,"clipperCost":76624.06513870315,"unsoldClips":5.999999999999548e+27,"funds":0,"margin":0.44,"wire":0,"wireCost":145,"adCost":51200,"demand":3215.383215000002,"clipsSold":120571806.74999532,"avgRev":33370.75257965164,"ticks":497301,"marketing":2.3579476910000015,"marketingLvl":10,"x":1000,"clippperCost":5,"processors":119,"memory":120,"operations":25456,"trust":0,"nextTrust":196418000,"transaction":3325.52,"clipperBoost":7.5,"blinkCounter":0,"creativity":32235.024100163766,"creativityOn":true,"safetyProjectOn":false,"boostLvl":3,"wirePurchase":2564,"wireSupply":173250,"marketingEffectiveness":15,"milestoneFlag":14,"bankroll":52847990,"fib1":121393,"fib2":196418,"strategyEngineFlag":1,"investmentEngineFlag":0,"revPerSecFlag":0,"compFlag":1,"projectsFlag":1,"autoClipperFlag":1,"megaClipperFlag":1,"megaClipperCost":75955.94508846347,"megaClipperLevel":0,"megaClipperBoost":2.75,"creativitySpeed":516.321933803665,"creativityCounter":0,"wireBuyerFlag":0,"demandBoost":50,"humanFlag":0,"trustFlag":1,"nanoWire":106578.24999999956,"creationFlag":0,"wireProductionFlag":1,"spaceFlag":1,"factoryFlag":1,"harvesterFlag":1,"wireDroneFlag":1,"factoryLevel":0,"factoryBoost":1000,"droneBoost":2,"availableMatter":0,"acquiredMatter":0,"processedMatter":0,"harvesterLevel":0,"wireDroneLevel":1000,"factoryCost":100000000,"harvesterCost":1000000,"wireDroneCost":5636073840304.029,"factoryRate":100000000000000,"harvesterRate":2618033700000,"wireDroneRate":1618033900000,"harvesterBill":0,"wireDroneBill":1733093761607379.2,"factoryBill":0,"probeCount":0,"totalMatter":3e+55,"foundMatter":6e+27,"qFlag":1,"qClock":3721.570000034813,"qChipCost":60000,"nextQchip":10,"bribe":512000000,"battleFlag":0,"portfolioSize":2,"stockID":138,"secTotal":26000000,"portTotal":78847990,"sellDelay":658,"riskiness":1,"maxPort":5,"m":26000000,"investLevel":9,"investUpgradeCost":52273,"stockGainThreshold":0.6300000000000001,"ledger":503392212,"stockReportCounter":6762,"tourneyCost":8000,"tourneyLvl":149,"stratCounter":4,"roundNum":0,"hMove":2,"vMove":2,"hMovePrev":2,"vMovePrev":2,"aa":3,"ab":2,"ba":3,"bb":4,"rounds":64,"currentRound":35,"rCounter":3,"tourneyInProg":1,"winnerPtr":1,"high":0,"pick":"7","yomi":76437,"yomiBoost":1,"probeSpeed":0,"probeNav":0,"probeRep":0,"partialProbeSpawn":0,"probeHaz":0,"partialProbeHaz":0,"probesLostHaz":0,"probesLostDrift":0,"probesLostCombat":0,"probeFac":0,"probeWire":0,"probeCombat":0,"attackSpeed":0.2,"battleSpeed":0.2,"attackSpeedFlag":0,"attackSpeedMod":0.1,"probeDescendents":0,"drifterCount":0,"warTrigger":1000000,"battleID":0,"battleName":"foo","battleNameFlag":0,"maxBattles":1,"battleClock":0,"battleAlarm":10,"outcomeTimer":150,"drifterCombat":1.75,"probeTrust":2,"probeUsedTrust":0,"probeTrustCost":2513,"probeLaunchLevel":0,"probeCost":100000000000000000}')
+    game.localStorage.setItem('saveProjectsActive1', '["projectButton42","projectButton118","projectButton119","projectButton130"]')
+    game.localStorage.setItem('saveProjectsFlags1', '[1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]')
+    game.localStorage.setItem('saveProjectsUses1', '[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]')
     game.localStorage.setItem('saveStratsActive1', '[1,1,1,1,1,1,1,1]')
     flareLoad()
     setTimeout(flareOp, 1000)
@@ -839,7 +1078,10 @@ flareProjects = [
         operations: 120000,
         mws: 10000000,
         clips: Math.pow(10, 27)*5,
-        ifRun: () => flareStone++
+        ifRun: () => {
+            flareSave()
+            flareStone++
+        }
     },
     // ----- Phase 3 -----
     // Reboot the Swarm: alignment
