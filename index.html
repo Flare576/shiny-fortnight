@@ -14,18 +14,13 @@
         #flareOutputContainer {
             display: none;
             position: fixed;
-            top: 0;
-            width: 100%;
-            height: 40px;
+            top: 60px;
+            right: 0;
             z-index: 100;
         }
 
         .flareDataHolder {
-            display: flex;
-            justify-content: space-between;
             background: #efefef;
-            width: 50%;
-            height: 100%;
             margin: auto;
             border-radius: 5px;
             padding: 5px;
@@ -36,19 +31,6 @@
             overflow: hidden;
             overflow-x: hidden;
             margin-left: 5px;
-        }
-        .flareToggle {
-            display: flex;
-        }
-
-        .flareToggle a {
-            height: 20px;
-            width: 20px;
-            border-radius: 2px;
-            text-align: center;
-            padding: 5px;
-            background: #ffffff;
-            text-decoration: none;
         }
 
         #flareIntro {
@@ -73,19 +55,6 @@
     </style>
     <script src="FlareAI.js"></script>
     <script>
-        function flareToggleOutput() {
-            let container = document.getElementById('flareOutputContainer');
-            let output = document.getElementById('flareOutput');
-            if (container.style.height === '200px') {
-                container.style.height = '40px';
-                output.style.overflowY = 'hidden';
-            } else {
-                container.style.height = '200px';
-                output.style.overflowY = 'scroll';
-            }
-            document.getElementById("flareOutput").scrollTop = document.getElementById("flareOutput").scrollHeight;
-        }
-
         function flareStartAI() {
             document.getElementById("flareIntro").style.display="none";
             document.getElementById("flareOutputContainer").style.display="flex";
@@ -107,7 +76,6 @@
 <div id="flareOutputContainer">
     <div class="flareDataHolder">
         <div id="flareOutput"></div>
-        <div class="flareToggle"><a onclick="flareToggleOutput()" href="#">...</a></div>
     </div>
 </div>
 <div id="gameHolder"></div>

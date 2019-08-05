@@ -368,13 +368,12 @@ const resetGame = (callback) => {
 
 flareLog = (message) => {
   flareMessages.push(message)
-  let messages = flareMessages.length > 1 ? '/*' : '';
+  let messages = '';
   flareMessages.forEach((mess, i) => {
       if (i < flareMessages.length - 1) {
-        messages += '<br/>&nbsp;-&nbsp;';
+        messages += '<br/>&nbsp;';
       } else {
-          messages += flareMessages.length > 1 ? '<br/>*/<br/><br/>' : '';
-          messages += '//&nbsp;';
+          messages += '<br/>(new)&nbsp;';
       }
       messages += mess;
   })
