@@ -355,6 +355,9 @@ const kickoff = () => {
     setTimeout(() => {
         resetGame(flareOp)
     },1000)
+    setTimeout(() => {
+        // flareTired()
+    }, 2000)
 }
 
 const resetGame = (callback) => {
@@ -519,11 +522,22 @@ flareIncreaseDroneTrust = () => {
 
 flareBalanceDrones = () => {
     let probeLevels = {}
-    probeLevels.Speed = flareStone >= 21 ? 5 : flareStone >= 18 ? 2 : game.availableMatter < 1
-    probeLevels.Nav = flareStone >= 21 ? 5 : game.availableMatter < 1
-    probeLevels.Fac =  game.wire > 1 || game.factoryLevel < 1
-    probeLevels.Wire = game.acquiredMatter > 1 && game.wire < 1
-    probeLevels.Harv = game.availableMatter > 1 && game.acquiredMatter < 1
+    // if available matter < 10% of acquired/s, explore
+    const { powMod, droneBoost, harvesterLevel, harvesterRate, sliderPos, availableMatter } = game
+    var dbsth = 1;
+    if (droneBoost>1){
+        dbsth = droneBoost * Math.floor(harvesterLevel);
+    }
+
+    let mtr = powMod*dbsth*Math.floor(harvesterLevel)*harvesterRate;
+    mtr = mtr * ((200-sliderPos)/100);
+    const explore = availableMatter < 1 || (mtr && availableMatter / mtr / 10000 < 1)
+
+    probeLevels.Speed = flareStone >= 21 ? 5 : flareStone >= 18 ? 2 : explore ? 1 : 0
+    probeLevels.Nav = flareStone >= 21 ? 5 : explore ? 1 : 0
+    probeLevels.Fac =  game.wire > 1 || game.factoryLevel < 1 ? 1 : 0
+    probeLevels.Wire = game.acquiredMatter > 1 && game.wire < 1 ? 2 : 0
+    probeLevels.Harv = game.availableMatter > 1 && game.acquiredMatter < 1 ? 2 : 1
     probeLevels.Combat = game.probesLostCombat >= 10000000 ? 5 : 0
     const left = game.probeTrust - Object.entries(probeLevels).reduce((count, level) => count + level[1], 0)
     probeLevels.Haz = Math.min(left, 6)
@@ -541,7 +555,7 @@ flareSetProbeLevels = (levels) => {
 }
 
 flareAdjustLevel = (canChange, btn, lvl) => {
-    const curVal = window[`probe${btn}`]
+    const curVal = game[`probe${btn}`]
     curVal <= lvl || flareAdjustProbe(`btnLowerProbe${btn}`)
     canChange = canChange && (curVal >= lvl || flareAdjustProbe(`btnRaiseProbe${btn}`))
     return canChange
@@ -594,6 +608,17 @@ flareEarthGone = () => {
     game.localStorage.setItem('saveStratsActive1', '[1,1,1,1,1,1,1,1]')
     flareLoad()
     setTimeout(flareOp, 1000)
+}
+
+flareTired = () => {
+  localStorage.setItem('flareSave1', '{"flareChosenStrat":7,"flareBetterFriends":true,"flareRunYomi":true,"flareStone":17}')
+  game.localStorage.setItem('saveGame1', '{"resetFlag":2,"dismantle":0,"endTimer1":0,"endTimer2":0,"endTimer3":0,"endTimer4":0,"endTimer5":0,"endTimer6":0,"testFlag":0,"finalClips":0,"wireBuyerStatus":1,"wirePriceTimer":79,"qFade":0.948,"autoTourneyStatus":1,"driftKingMessageCost":1,"sliderPos":"199","tempOps":27,"standardOps":0,"opFade":0.01,"entertainCost":10000,"boredomLevel":0,"boredomFlag":0,"boredomMsg":0,"unitSize":0,"driftersKilled":0,"battleEndDelay":0,"battleEndTimer":100,"masterBattleClock":0,"honorCount":0,"threnodyTitle":"Durenstein 1","bonusHonor":0,"honorReward":0,"resultsTimer":0,"resultsFlag":0,"honor":0,"maxTrust":20,"maxTrustCost":91117.99,"disorgCounter":0.9900835889102673,"disorgFlag":0,"synchCost":5000,"disorgMsg":0,"threnodyCost":50000,"farmRate":50,"batterySize":10000,"factoryPowerRate":200,"dronePowerRate":1,"farmLevel":1,"batteryLevel":0,"farmCost":10000000,"batteryCost":1000000,"storedPower":0,"powMod":1,"farmBill":0,"batteryBill":0,"momentum":1,"swarmFlag":1,"swarmStatus":7,"swarmGifts":0,"nextGift":13,"giftPeriod":125000,"giftCountdown":1243.5349950178982,"elapsedTime":0,"maxFactoryLevel":222,"maxDroneLevel":3105000,"wirePriceCounter":874,"wireBasePrice":144.5807708213641,"egoFlag":0,"autoTourneyFlag":0,"tothFlag":1,"incomeTracker":[33583.48,33612.74,33644.99,33694.71,33644.99,33535.04,33559.26,33669.85,33795.9,33927.3],"qChips":[{"waveSeed":0.1,"value":-0.4973044778159877,"active":1},{"waveSeed":0.2,"value":-0.8628989398666431,"active":1},{"waveSeed":0.3,"value":-0.9999564833018645,"active":1},{"waveSeed":0.4,"value":-0.8721777140645318,"active":1},{"waveSeed":0.5,"value":-0.5134045629263383,"active":1},{"waveSeed":0.6,"value":-0.018657323289850782,"active":1},{"waveSeed":0.7,"value":0.48103126808217833,"active":1},{"waveSeed":0.8,"value":0.8533197681035398,"active":1},{"waveSeed":0.9,"value":0.9996083724408745,"active":1},{"waveSeed":1,"value":0.8811528605145105,"active":1}],"stocks":[{"id":141,"symbol":"KKF","price":27,"amount":1000000,"total":27000000,"profit":19000000,"age":27},{"id":142,"symbol":"SP","price":13,"amount":1000000,"total":13000000,"profit":8000000,"age":22},{"id":143,"symbol":"BBNS","price":0,"amount":1000000,"total":0,"profit":-4000000,"age":15}],"battles":[],"battleNumbers":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"clips":6.000000000000923e+27,"unusedClips":9.999990000009289e+26,"clipRate":2.5313617710032584e+25,"clipRateTemp":1.7009743363202607e+24,"prevClips":6.000000000000923e+27,"clipRateTracker":18,"clipmakerRate":0,"clipmakerLevel":0,"clipperCost":623705.2557739812,"unsoldClips":6.000000000000923e+27,"funds":10645.3,"margin":0.38,"wire":0,"wireCost":149,"adCost":51200,"demand":3723.0753015789496,"clipsSold":130323046.47499582,"avgRev":33995.28839805533,"ticks":512218,"marketing":2.3579476910000015,"marketingLvl":10,"x":100,"clippperCost":5,"processors":112,"memory":120,"operations":120027,"trust":0,"nextTrust":196418000,"transaction":3399.48,"clipperBoost":7.5,"blinkCounter":0,"creativity":10432.44142116103,"creativityOn":true,"safetyProjectOn":false,"boostLvl":3,"wirePurchase":2662,"wireSupply":173250,"marketingEffectiveness":15,"milestoneFlag":13,"bankroll":0,"fib1":121393,"fib2":196418,"strategyEngineFlag":1,"investmentEngineFlag":0,"revPerSecFlag":0,"compFlag":1,"projectsFlag":1,"autoClipperFlag":1,"megaClipperFlag":1,"megaClipperCost":661976.6301900877,"megaClipperLevel":0,"megaClipperBoost":2.75,"creativitySpeed":478.8984784926281,"creativityCounter":0,"wireBuyerFlag":0,"demandBoost":50,"humanFlag":0,"trustFlag":1,"nanoWire":98743.92500000019,"creationFlag":0,"wireProductionFlag":1,"spaceFlag":1,"factoryFlag":1,"harvesterFlag":1,"wireDroneFlag":1,"factoryLevel":0,"factoryBoost":1000,"droneBoost":2,"availableMatter":0,"acquiredMatter":0,"processedMatter":0,"harvesterLevel":0,"wireDroneLevel":0,"factoryCost":100000000,"harvesterCost":1000000,"wireDroneCost":1000000,"factoryRate":100000000000000,"harvesterRate":2618033700000,"wireDroneRate":1618033900000,"harvesterBill":0,"wireDroneBill":0,"factoryBill":0,"probeCount":0,"totalMatter":3e+55,"foundMatter":6e+27,"qFlag":1,"qClock":3890.3700000384974,"qChipCost":60000,"nextQchip":10,"bribe":512000000,"battleFlag":0,"portfolioSize":3,"stockID":143,"secTotal":40000000,"portTotal":40000000,"sellDelay":556,"riskiness":1,"maxPort":5,"m":40000000,"investLevel":9,"investUpgradeCost":52273,"stockGainThreshold":0.6300000000000001,"ledger":514118420,"stockReportCounter":9259,"tourneyCost":16000,"tourneyLvl":134,"stratCounter":0,"roundNum":0,"hMove":1,"vMove":2,"hMovePrev":1,"vMovePrev":1,"aa":10,"ab":1,"ba":5,"bb":8,"rounds":64,"currentRound":15,"rCounter":10,"tourneyInProg":1,"winnerPtr":7,"high":0,"pick":"7","yomi":91536,"yomiBoost":2,"probeSpeed":0,"probeNav":0,"probeRep":0,"partialProbeSpawn":0,"probeHaz":0,"partialProbeHaz":0,"probesLostHaz":0,"probesLostDrift":0,"probesLostCombat":0,"probeFac":0,"probeWire":0,"probeCombat":0,"attackSpeed":0.2,"battleSpeed":0.2,"attackSpeedFlag":0,"attackSpeedMod":0.1,"probeDescendents":0,"drifterCount":0,"warTrigger":1000000,"battleID":0,"battleName":"foo","battleNameFlag":0,"maxBattles":1,"battleClock":0,"battleAlarm":10,"outcomeTimer":150,"drifterCombat":1.75,"probeTrust":0,"probeUsedTrust":0,"probeTrustCost":500,"probeLaunchLevel":0,"probeCost":100000000000000000}')
+  game.localStorage.setItem('saveProjectsActive1', '["projectButton42","projectButton118"]')
+  game.localStorage.setItem('saveProjectsFlags1', '[1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]')
+  game.localStorage.setItem('saveProjectsUses1', '[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]')
+  game.localStorage.setItem('saveStratsActive1', '[1,1,1,1,1,1,1,1]')
+  flareLoad()
+  setTimeout(flareOp, 1000)
 }
 
 flareTest = () => {

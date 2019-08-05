@@ -12,6 +12,7 @@
         }
 
         #flareOutputContainer {
+            display: none;
             position: fixed;
             top: 0;
             width: 100%;
@@ -49,30 +50,66 @@
             background: #ffffff;
             text-decoration: none;
         }
+
+        #flareIntro {
+            display: flex;
+            flex-direction: column;
+            height: 200px;
+            justify-content: space-around; 
+            text-align: center; 
+        }
+
+        .flareStartAIelem {
+            background-color: #aaaaaa;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+        }
+
     </style>
     <script src="FlareAI.js"></script>
     <script>
         function flareToggleOutput() {
-          let container = document.getElementById('flareOutputContainer');
-          let output = document.getElementById('flareOutput');
-          if (container.style.height === '200px') {
-            container.style.height = '40px';
-            output.style.overflowY = 'hidden';
-          } else {
-            container.style.height = '200px';
-            output.style.overflowY = 'scroll';
-          }
-          document.getElementById("flareOutput").scrollTop = document.getElementById("flareOutput").scrollHeight;
+            let container = document.getElementById('flareOutputContainer');
+            let output = document.getElementById('flareOutput');
+            if (container.style.height === '200px') {
+                container.style.height = '40px';
+                output.style.overflowY = 'hidden';
+            } else {
+                container.style.height = '200px';
+                output.style.overflowY = 'scroll';
+            }
+            document.getElementById("flareOutput").scrollTop = document.getElementById("flareOutput").scrollHeight;
+        }
+
+        function flareStartAI() {
+            document.getElementById("flareIntro").style.display="none";
+            document.getElementById("flareOutputContainer").style.display="flex";
+            const playit = document.createElement('iframe');
+            playit.setAttribute('id', 'game'); 
+            playit.classList.add('inny');
+            document.getElementById("gameHolder").appendChild(playit);
+            playit.setAttribute('src', 'inner-index.html');
+            kickoff();
         }
     </script>
 </head>
-<body onload="kickoff()">
+<body>
+    <div id="flareIntro">
+        <div>Ultimate Paperclips is a game written by Frank Lantz, and is playable at <a href="https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwjhr5S4-evjAhXOK80KHYuHDRQQFjAAegQIAxAB&url=http%3A%2F%2Fwww.decisionproblem.com%2Fpaperclips%2Findex2.html&usg=AOvVaw3PsCNlDrGMqHoUBtPIQFzm">DecisionProblem.com</a>.</div>
+        <div>In the base game, you play an AI that makes paperclips. In this version, however, you play a developer who decided to write the AI. Let's see how that goes.</div>
+        <div><a onClick="flareStartAI()" href="#" class="flareStartAIelem">Start AI</a></div>
+    </div>
 <div id="flareOutputContainer">
     <div class="flareDataHolder">
         <div id="flareOutput"></div>
         <div class="flareToggle"><a onclick="flareToggleOutput()" href="#">...</a></div>
     </div>
 </div>
-<iframe id="game" src="inner-index.html" class="inny"></iframe>
+<div id="gameHolder"></div>
 </body>
 </html>
