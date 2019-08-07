@@ -17,6 +17,9 @@
             top: 60px;
             right: 0;
             z-index: 100;
+            /* max-width: 50%; */
+            max-width: 550px;
+            height: calc(100vh - 100px);
         }
 
         .flareDataHolder {
@@ -24,12 +27,12 @@
             margin: auto;
             border-radius: 5px;
             padding: 5px;
+            height: 100%;
         }
 
         #flareOutput {
             height: 100%;
-            overflow: hidden;
-            overflow-x: hidden;
+            overflow: scroll;
             margin-left: 5px;
         }
 
@@ -57,7 +60,7 @@
     <script>
         function flareStartAI() {
             document.getElementById("flareIntro").style.display="none";
-            document.getElementById("flareOutputContainer").style.display="flex";
+            document.getElementById("flareOutputContainer").style.display="block";
             const playit = document.createElement('iframe');
             playit.setAttribute('id', 'game'); 
             playit.classList.add('inny');
@@ -67,7 +70,7 @@
         }
     </script>
 </head>
-<body>
+<body onload="flareStartAI()">
     <div id="flareIntro">
         <div>Ultimate Paperclips is a game written by Frank Lantz, and is playable at <a href="https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwjhr5S4-evjAhXOK80KHYuHDRQQFjAAegQIAxAB&url=http%3A%2F%2Fwww.decisionproblem.com%2Fpaperclips%2Findex2.html&usg=AOvVaw3PsCNlDrGMqHoUBtPIQFzm">DecisionProblem.com</a>.</div>
         <div>In the base game, you play an AI that makes paperclips. In this version, however, you play a developer who decided to write the AI. Let's see how that goes.</div>
